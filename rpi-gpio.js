@@ -633,9 +633,9 @@ function isPWMEnabled() {
 }
 
 function setPWMPeriod(period) {
-    debug('set period %s on PWM', period.toUpperCase());
+    debug('set period %s on PWM', period);
     return new Promise(function(resolve, reject) {
-        fs.writeFile(PWM_PATH + '/pwm0/period', period, function(err) {
+        fs.writeFile(PWM_PATH + '/pwm0/period', String(period), function(err) {
             if (err) {
                 return reject(err);
             }
@@ -645,9 +645,9 @@ function setPWMPeriod(period) {
 }
 
 function setPWMDutyCycle(dutyCycle) {
-    debug('set duty cycle %s on PWM', dutyCycle.toUpperCase());
+    debug('set duty cycle %s on PWM', dutyCycle);
     return new Promise(function(resolve, reject) {
-        fs.writeFile(PWM_PATH + '/pwm0/duty_cycle', dutyCycle, function(err) {
+        fs.writeFile(PWM_PATH + '/pwm0/duty_cycle', String(dutyCycle), function(err) {
             if (err) {
                 return reject(err);
             }
