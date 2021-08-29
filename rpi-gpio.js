@@ -350,6 +350,14 @@ function Gpio() {
     EventEmitter.call(this);
     this.reset();
 
+    this.stopPwm = function(onDone) {
+        onDone = onDone || function() {};
+
+        setRaspberryVersion().then(() => {
+            return disablePWM();
+        }).then(() => onDone(), (err) => onDone(err))
+    }
+
     /**
      * Setup a channel for use as an PWM emiter
      *
@@ -753,6 +761,17 @@ GPIO.promise = {
             }
 
             GPIO.pwm(period, dutyCycle, done)
+        })
+    },
+
+    stopPwm: function() {
+        return new Promise(function (resolve, reject) {
+            function done(error) {
+                if (error) return reject(error);
+                resolve();
+            }
+
+            GPIO.stopPwm(done)
         })
     },
 
