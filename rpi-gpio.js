@@ -6,6 +6,34 @@ var debug        = require('debug')('rpi-gpio');
 var Epoll        = require('epoll').Epoll;
 
 var PATH = '/sys/class/gpio';
+
+// Since Linux 6.6 the Raspberry Pi GPIO controller is no longer registered at base 0 in sysfs
+// (Pi 0-4: 512, Pi 5: 571), so BCM pin N is exported as gpio(base + N). Detected once from the
+// gpiochip labels; falls back to 0 on old kernels and when sysfs is not readable.
+var BASE_LABELS = /^pinctrl-(bcm2835|bcm2711|bcm2712|rp1)$/;
+var gpioBase;
+
+function getGpioBase() {
+    if (gpioBase !== undefined) {
+        return gpioBase;
+    }
+    gpioBase = 0;
+    try {
+        fs.readdirSync(PATH).forEach(function(name) {
+            if (name.indexOf('gpiochip') !== 0) {
+                return;
+            }
+            var label = fs.readFileSync(PATH + '/' + name + '/label', 'utf8').trim();
+            if (BASE_LABELS.test(label)) {
+                gpioBase = parseInt(fs.readFileSync(PATH + '/' + name + '/base', 'utf8'), 10) || 0;
+            }
+        });
+    } catch (e) {
+        debug('gpio base detection failed, assuming 0: %s', e.message);
+    }
+    debug('gpio base %d', gpioBase);
+    return gpioBase;
+}
 var PINS = {
     v1: {
         // 1: 3.3v
@@ -465,12 +493,13 @@ function Gpio() {
     };
 
     function getPinRpi(channel) {
-        return currentPins[channel] + '';
+        var pin = currentPins[channel];
+        return pin === undefined ? pin + '' : (pin + getGpioBase()) + '';
     };
 
     function getPinBcm(channel) {
         channel = parseInt(channel, 10);
-        return currentValidBcmPins.indexOf(channel) !== -1 ? (channel + '') : null;
+        return currentValidBcmPins.indexOf(channel) !== -1 ? ((channel + getGpioBase()) + '') : null;
     };
 
     /**
